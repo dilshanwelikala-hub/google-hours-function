@@ -1,59 +1,28 @@
-exports.handler = async (event) => {
-  const placeId = event.queryStringParameters.placeId;
+export async function handler(event) {
+  const placeId = event.queryStringParameters?.placeId;
 
   if (!placeId) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: "Missing placeId" })
+      body: JSON.stringify({ error: "Missing placeId" }),
     };
   }
 
-  const url =
-    "https://maps.googleapis.com/maps/api/place/details/json" +
-    "?place_id=" + placeId +
-    "&fields=business_status,opening_hours,special_opening_hours" +
-    "&key=" + process.env.GOOGLE_API_KEY;
+  const API_KEY = process.env.GOOGLE_API_KEY;
+
+  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=business_status,opening_hours,special_opening_hours&key=${API_KEY}`;
 
   try {
     const res = await fetch(url);
-    const json = await res.json();
-    const place = json.result || {};
+    const data = await res.json();
+    const place = data.result || {};
 
     const businessStatus = place.business_status || "UNKNOWN";
 
-    /* ---------- TEMP / PERM CLOSED ---------- */
-    if (
-      businessStatus === "TEMPORARILY_CLOSED" ||
-      businessStatus === "PERMANENTLY_CLOSED"
-    ) {
-      return {
-        statusCode: 200,
-        headers: {
-          "Cache-Control": "public, max-age=21600"
-        },
-        body: JSON.stringify({
-          businessStatus,
-          isOpenNow: null,
-          weekdayHours: [],
-          specialHours: [],
-          message:
-            businessStatus === "TEMPORARILY_CLOSED"
-              ? "Temporarily closed"
-              : "Permanently closed"
-        })
-      };
-    }
+    // Safely get weekday hours (empty if missing)
+    const hours = place.opening_hours?.weekday_text || [];
 
-    /* ---------- OPENING HOURS ---------- */
-    const weekdayHours =
-      place.opening_hours?.weekday_text || [];
-
-    const isOpenNow =
-      typeof place.opening_hours?.open_now === "boolean"
-        ? place.opening_hours.open_now
-        : null;
-
-    /* ---------- SPECIAL HOURS (HOLIDAYS / OVERRIDES) ---------- */
+    // Optional: special hours (holidays / exceptions)
     const specialHours =
       place.special_opening_hours?.special_days?.map(day => ({
         date: day.date,
@@ -65,21 +34,21 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: {
-        "Cache-Control": "public, max-age=21600"
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=86400", // 24h caching
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        businessStatus,
-        isOpenNow,
-        weekdayHours,
-        specialHours,
-        message: "OK"
-      })
+        hours,             // ✅ old format for your embeds
+        businessStatus,    // "OPERATIONAL", "TEMPORARILY_CLOSED", etc.
+        specialHours,      // optional
+        message: businessStatus === "UNKNOWN" ? "Hours unavailable" : "OK"
+      }),
     };
-
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message })
+      body: JSON.stringify({ error: error.message }),
     };
   }
-};
+}
