@@ -8,7 +8,7 @@ export async function handler(event) {
     };
   }
 
-  const API_KEY = process.env.GOOGLE_API_KEY;
+  const API_KEY = process.env.GOOGLE_API_KEY_2;
 
   const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=opening_hours.weekday_text&key=${API_KEY}`;
 
