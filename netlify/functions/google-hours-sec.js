@@ -10,7 +10,7 @@ export async function handler(event) {
 
   const API_KEY = process.env.GOOGLE_API_KEY_2;
 
-  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=opening_hours.weekday_text&key=${API_KEY}`;
+  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=current_opening_hours,opening_hours&key=${API_KEY}`;
 
   try {
     const res = await fetch(url);
@@ -23,19 +23,19 @@ export async function handler(event) {
       };
     }
 
+    const hours =
+      data.result.current_opening_hours?.weekday_text ||
+      data.result.opening_hours?.weekday_text ||
+      [];
+
     return {
       statusCode: 200,
       headers: {
         "Access-Control-Allow-Origin": "*",
-
-        // 🔥 CACHE FOR 24 HOURS (reduces Google API calls)
         "Cache-Control": "public, max-age=86400",
-
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        hours: data.result.opening_hours.weekday_text,
-      }),
+      body: JSON.stringify({ hours }),
     };
   } catch (error) {
     return {
