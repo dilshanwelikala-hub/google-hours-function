@@ -29,7 +29,7 @@ export async function handler(event) {
         "Access-Control-Allow-Origin": "*",
 
         // 🔥 CACHE FOR 24 HOURS (reduces Google API calls)
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": "public, max-age=900",
 
         "Content-Type": "application/json",
       },
