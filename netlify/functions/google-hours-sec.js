@@ -32,7 +32,7 @@ export async function handler(event) {
       statusCode: 200,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": "public, max-age=900",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ hours }),
